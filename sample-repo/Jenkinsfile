@@ -1,0 +1,28 @@
+pipeline {
+    agent any
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    sh "docker stop container || true"
+                    sh "docker rm container || true"
+                    def dockerImage = 'localhost:5000/my_local_image'
+                    docker.image(dockerImage).pull()
+                    def containerId = docker.image(dockerImage).run("--user root --rm -it -v /mnt/:/mnt/ --name container")
+                }
+            }
+        }
+        stage('Run Script') {
+            steps {
+                sh "docker exec container /bin/bash -c 'python3 /mnt/helloworld.py'"
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+            sh "docker stop container || true"
+            sh "docker rm container || true"
+        }
+    }
+}
